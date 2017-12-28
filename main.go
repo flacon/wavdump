@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-var data = make([]byte, 4)
-
 func help() {
 	fmt.Println("wavdump -Prints information from the header of the WAV file")
 	fmt.Println("")
@@ -15,6 +13,7 @@ func help() {
 }
 
 func readTag(file *os.File) string {
+	var data = make([]byte, 4)
 	_, err := file.Read(data)
 	if err != nil {
 		fmt.Println(err)
@@ -24,6 +23,7 @@ func readTag(file *os.File) string {
 }
 
 func readUInt16(file *os.File) uint16 {
+	var data = make([]byte, 2)
 	_, err := file.Read(data)
 	if err != nil {
 		fmt.Println(err)
@@ -35,6 +35,7 @@ func readUInt16(file *os.File) uint16 {
 }
 
 func readUInt32(file *os.File) uint32 {
+	var data = make([]byte, 4)
 	_, err := file.Read(data)
 	if err != nil {
 		fmt.Println(err)
