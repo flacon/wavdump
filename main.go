@@ -12,17 +12,17 @@ func help() {
 	fmt.Println("Usage: wavdump INPUTFILE")
 }
 
-func readTag(file *os.File) string {
+func readTag(file *os.File) ([]byte, string) {
 	var data = make([]byte, 4)
 	_, err := file.Read(data)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(2)
 	}
-	return string(data)
+	return data, string(data)
 }
 
-func readUInt16(file *os.File) uint16 {
+func readUInt16(file *os.File) ([]byte, uint16) {
 	var data = make([]byte, 2)
 	_, err := file.Read(data)
 	if err != nil {
@@ -30,11 +30,12 @@ func readUInt16(file *os.File) uint16 {
 		os.Exit(2)
 	}
 
-	return uint16(data[1])<<8 +
-		uint16(data[0])
+	return data,
+		uint16(data[1])<<8 +
+			uint16(data[0])
 }
 
-func readUInt32(file *os.File) uint32 {
+func readUInt32(file *os.File) ([]byte, uint32) {
 	var data = make([]byte, 4)
 	_, err := file.Read(data)
 	if err != nil {
@@ -42,22 +43,25 @@ func readUInt32(file *os.File) uint32 {
 		os.Exit(2)
 	}
 
-	return uint32(data[3])<<24 +
-		uint32(data[2])<<16 +
-		uint32(data[1])<<8 +
-		uint32(data[0])
+	return data,
+		uint32(data[3])<<24 +
+			uint32(data[2])<<16 +
+			uint32(data[1])<<8 +
+			uint32(data[0])
+
 }
 
-func printUInt32(value uint32, desc string) {
-	hex := fmt.Sprintf("%0.8X", value)
-	dec := fmt.Sprintf("%d", value)
-	fmt.Printf("%14s %10s     %s\n", hex, dec, desc)
+func printBytes(data []byte) string {
+	res := ""
+	for _, b := range data {
+		res += fmt.Sprintf("%0.2X ", b)
+	}
+	return res
 }
 
-func printUInt16(value uint16, desc string) {
-	hex := fmt.Sprintf("%0.4X", value)
-	dec := fmt.Sprintf("%d", value)
-	fmt.Printf("%14s %10s     %s\n", hex, dec, desc)
+func print(col1 string, col2 interface{}, bytes []byte) {
+	s := fmt.Sprintf("%-20s %16v ", col1, col2)
+	fmt.Printf("%s %16s\n", s, printBytes(bytes))
 }
 
 func read(fileName string) error {
@@ -67,41 +71,48 @@ func read(fileName string) error {
 	}
 	defer file.Close()
 
-	tag := readTag(file)
-	chunkSize := readUInt32(file)
-	format := readTag(file)
+	data, tag := readTag(file)
+	print(tag, "", data)
 
-	fmt.Printf("%s\n", tag)
-	printUInt32(chunkSize, "ChunkSize")
-	fmt.Printf("%14s  %10s    Format\n", format, "")
+	data, chunkSize := readUInt32(file)
+	print("ChunkSize", chunkSize, data)
+
+	data, format := readTag(file)
+	print("Format", format, data)
 
 	for {
-		subchunkID := readTag(file)
-		subchunkSize := readUInt32(file)
+		fmt.Println()
+
+		data, subchunkID := readTag(file)
+		print(subchunkID, "", data)
+
+		data, subchunkSize := readUInt32(file)
+		print("    SubChunkSize", subchunkSize, data)
+
 		pos, err := file.Seek(0, io.SeekCurrent)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(2)
 		}
 
-		fmt.Printf("\n%s\n", subchunkID)
-		printUInt32(subchunkSize, "SubChunkSize")
-
 		if subchunkID == "fmt " {
-			audioFormat := readUInt16(file)
-			numChannels := readUInt16(file)
-			sampleRate := readUInt32(file)
-			byteRate := readUInt32(file)
-			blockAlign := readUInt16(file)
-			bitsPerSample := readUInt16(file)
+			data, audioFormat := readUInt16(file)
+			print("    AudioFormat", audioFormat, data)
 
-			printUInt16(audioFormat, "AudioFormat")
-			printUInt16(numChannels, "NumChannels")
-			printUInt32(sampleRate, "SampleRate")
-			printUInt32(byteRate, "ByteRate")
-			printUInt16(blockAlign, "BlockAlign")
-			printUInt16(bitsPerSample, "BitsPerSample")
+			data, numChannels := readUInt16(file)
+			print("    NumChannels", numChannels, data)
 
+			data, sampleRate := readUInt32(file)
+			print("    SampleRate", sampleRate, data)
+
+			data, byteRate := readUInt32(file)
+			print("    ByteRate", byteRate, data)
+
+			data, blockAlign := readUInt16(file)
+			print("    BlockAlign", blockAlign, data)
+
+			data, bitsPerSample := readUInt16(file)
+			print("    BitsPerSample", bitsPerSample, data)
 		}
 
 		if subchunkID == "data" {
