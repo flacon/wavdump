@@ -12,6 +12,16 @@ func help() {
 	fmt.Println("Usage: wavdump INPUTFILE")
 }
 
+func readArray(file *os.File, size uint) []byte {
+	var data = make([]byte, size)
+	_, err := file.Read(data)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(2)
+	}
+	return data
+}
+
 func readTag(file *os.File) ([]byte, string) {
 	var data = make([]byte, 4)
 	_, err := file.Read(data)
@@ -59,9 +69,9 @@ func printBytes(data []byte) string {
 	return res
 }
 
-func print(col1 string, col2 interface{}, bytes []byte) {
-	s := fmt.Sprintf("%-20s %16v ", col1, col2)
-	fmt.Printf("%s %16s\n", s, printBytes(bytes))
+func print(col1 string, col2 interface{}, bytes []byte, comment string) {
+	s := fmt.Sprintf("%-30s %16v ", col1, col2)
+	fmt.Printf("%s %16s    %s\n", s, printBytes(bytes), comment)
 }
 
 func read(fileName string) error {
@@ -72,22 +82,22 @@ func read(fileName string) error {
 	defer file.Close()
 
 	data, tag := readTag(file)
-	print(tag, "", data)
+	print(tag, "", data, "")
 
 	data, chunkSize := readUInt32(file)
-	print("ChunkSize", chunkSize, data)
+	print("ChunkSize", chunkSize, data, "")
 
 	data, format := readTag(file)
-	print("Format", format, data)
+	print("Format", format, data, "")
 
 	for {
 		fmt.Println()
 
 		data, subchunkID := readTag(file)
-		print(subchunkID, "", data)
+		print(subchunkID, "", data, "Chunk ID")
 
 		data, subchunkSize := readUInt32(file)
-		print("    SubChunkSize", subchunkSize, data)
+		print("    cksize", subchunkSize, data, "Chunk size")
 
 		pos, err := file.Seek(0, io.SeekCurrent)
 		if err != nil {
@@ -97,22 +107,39 @@ func read(fileName string) error {
 
 		if subchunkID == "fmt " {
 			data, audioFormat := readUInt16(file)
-			print("    AudioFormat", audioFormat, data)
+			print("    wFormatTag", audioFormat, data, "Format code")
 
 			data, numChannels := readUInt16(file)
-			print("    NumChannels", numChannels, data)
+			print("    NumChannels", numChannels, data, "")
 
 			data, sampleRate := readUInt32(file)
-			print("    SampleRate", sampleRate, data)
+			print("    SampleRate", sampleRate, data, "")
 
 			data, byteRate := readUInt32(file)
-			print("    ByteRate", byteRate, data)
+			print("    ByteRate", byteRate, data, "")
 
 			data, blockAlign := readUInt16(file)
-			print("    BlockAlign", blockAlign, data)
+			print("    BlockAlign", blockAlign, data, "")
 
 			data, bitsPerSample := readUInt16(file)
-			print("    BitsPerSample", bitsPerSample, data)
+			print("    BitsPerSample", bitsPerSample, data, "")
+
+			if subchunkSize > 16 {
+				data, cbSize := readUInt16(file)
+				print("      sbSize", cbSize, data, "Size of the extension")
+
+				data, wValidBitsPerSample := readUInt16(file)
+				print("      wValidBitsPerSample", wValidBitsPerSample, data, "Number of valid bits")
+
+				data, dwChannelMask := readUInt32(file)
+				print("      dwChannelMask", dwChannelMask, data, "Speaker position mask")
+
+				subFormat := readArray(file, 16)
+				print("      SubFormat", "", subFormat[0:4], "⎫  GUID, including the")
+				print("", "", subFormat[4:8], "⎬  data format code")
+				print("", "", subFormat[8:12], "⎥  16 bytes")
+				print("", "", subFormat[12:16], "⎭")
+			}
 		}
 
 		if subchunkID == "data" {
