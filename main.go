@@ -135,9 +135,9 @@ func read(fileName string) error {
 				print("      dwChannelMask", dwChannelMask, data, "Speaker position mask")
 
 				subFormat := readArray(file, 16)
-				print("      SubFormat", "", subFormat[0:4], "⎫  GUID, including the")
-				print("", "", subFormat[4:8], "⎬  data format code")
-				print("", "", subFormat[8:12], "⎥  16 bytes")
+				print("      SubFormat", "", subFormat[0:4], "⎫ GUID, including the")
+				print("", "", subFormat[4:8], "⎬ data format code")
+				print("", "", subFormat[8:12], "⎪ 16 bytes")
 				print("", "", subFormat[12:16], "⎭")
 			}
 		}
