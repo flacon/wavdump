@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ type Line struct {
 type Parser struct {
 	file  *os.File
 	lines []Line
+	hash  []byte
 }
 
 func NewParser(file *os.File) (Parser, error) {
@@ -58,6 +60,8 @@ func (p *Parser) parse(fileName string) (err error) {
 	default:
 		return fmt.Errorf("file \"%s\" is corrupted or has an unsupported format", fileName)
 	}
+
+	p.hash = p.calcHash()
 
 	return nil
 }
@@ -132,4 +136,23 @@ func (p *Parser) readBytes(size uint, description string) []byte {
 	res.value = nil
 	p.lines = append(p.lines, res)
 	return res.data
+}
+
+func (p *Parser) calcHash() []byte {
+	h := sha256.New()
+
+	buf := make([]byte, 4 * 1024)
+	for {
+		_, err := p.file.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+                break
+            }
+			panic(err)
+		}
+
+		h.Write(buf)
+	}
+
+	return h.Sum(nil)
 }

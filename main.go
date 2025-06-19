@@ -7,7 +7,7 @@ import (
 	"github.com/docopt/docopt-go"
 )
 
-const appVersion = "0.2"
+const appVersion = "0.3"
 
 const appVersionString = "wavdump " + appVersion
 
@@ -92,6 +92,9 @@ func main() {
 			fmt.Println(err)
 			res = 2
 		}
+
+
+		fmt.Printf("\naudio data hash:    %x\n", parser.hash)
 	}
 
 	os.Exit(res)
