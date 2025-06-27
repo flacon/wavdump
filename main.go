@@ -7,7 +7,7 @@ import (
 	"github.com/docopt/docopt-go"
 )
 
-const appVersion = "0.3"
+const appVersion = "0.4"
 
 const appVersionString = "wavdump " + appVersion
 
