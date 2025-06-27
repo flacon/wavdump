@@ -50,7 +50,7 @@ func (p *Parser) readWave64FmtChunk() {
 	p.readUInt16("Block Align")
 	p.readUInt16("Bits Per Sample")
 
-	if chunkSize > 16 {
+	if chunkSize -16 - 8 > 16 { // - sizeof(GUID) - sizeof(chunkSize)
 		p.readUInt16("Size of the extension")
 		p.readUInt16("Number of valid bits")
 		p.readUInt32("Speaker position mask")
